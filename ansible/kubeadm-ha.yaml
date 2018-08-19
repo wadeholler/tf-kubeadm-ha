@@ -1,0 +1,28 @@
+- hosts: role_etcd
+  tasks:
+    - name: check in
+      command: uptime
+    - name: Run the equivalent of "apt-get update" as a separate step
+      apt:
+        update_cache: yes
+    - name:
+      apt:
+        name: "{{ item }}"
+      with_items:
+        - apt-transport-https 
+        - ca-certificates 
+        - curl 
+        - software-properties-common
+    - name: add docker-ce apt -key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+- hosts: all
+  vars:
+    kubernetes_api_lb_name: internal-kubeadm-tf-elb-1605963861.us-east-1.elb.amazonaws.com
+  tasks:
+    - name: template kubeadm-config.yaml
+      template:
+        src: kubeadm-config.yaml.j2
+        dest: /tmp/kubeadm-config.yaml
+      delegate_to: localhost
+      run_once: true
