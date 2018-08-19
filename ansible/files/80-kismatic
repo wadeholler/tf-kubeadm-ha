@@ -1,0 +1,5 @@
+# Created by cloud-init v. 0.7.5 on Thu, 27 Apr 2017 17:05:37 +0000
+
+# User rules for centos
+kismatic ALL=(ALL) NOPASSWD:ALL
+

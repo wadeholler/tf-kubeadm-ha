@@ -1,0 +1,84 @@
+- hosts: all
+  vars:
+    admin_password: fun4more
+    disconnected_installation: true
+    kismatic_user: kismatic
+    cloud_provider: aws
+    kismatic_key: /opt/kismatic/kismaticuserkey.pem
+    kismatic_elb: internal-kismatic-tf-elb-1854518133.us-gov-west-1.elb.amazonaws.com
+    kismatic_elb_short_name: internal-kismatic-tf-elb-1854518133.us-gov-west-1.elb.amazonaws.com
+    registry: 10.200.10.20:5000
+  tasks:
+    - name: copy base.repo
+      copy:
+        src: base.repo
+        dest: /etc/yum.repos.d/base.repo
+    - name: copy updates.repo
+      copy:
+        src: updates.repo
+        dest: /etc/yum.repos.d/updates.repo
+    - name: copy docker.repo
+      copy:
+        src: docker.repo
+        dest: /etc/yum.repos.d/docker.repo
+    - name: copy kubernetes.repo
+      copy:
+        src: kubernetes.repo
+        dest: /etc/yum.repos.d/kubernetes.repo
+    - name: copy gluster.repo
+      copy:
+        src: gluster.repo
+        dest: /etc/yum.repos.d/gluster.repo
+    - name: create kismatic user
+      user:
+        name: kismatic
+        comment: "kismatic"
+        uid: 1040
+        group: wheel
+    - name: sudoers.d/kismatic
+      copy:
+        src: 80-kismatic
+        dest: /etc/sudoers.d/80-kismatic
+    - name: create .ssh directory
+      file:
+        name: /home/kismatic/.ssh
+        state: directory
+        owner: kismatic
+        group: wheel
+    - name: copy the private key file
+      copy:
+        src: id_rsa
+        dest: /home/kismatic/.ssh/id_rsa
+        owner: kismatic
+        group: wheel
+    - name: copy the public key file
+      copy:
+        src: id_rsa.pub
+        dest: /home/kismatic/.ssh/id_rsa.pub
+        owner: kismatic
+        group: wheel
+    - name: make sure authorized key is there
+      authorized_key:
+        user: kismatic
+        state: present
+        key: "{{ lookup('file', 'id_rsa.pub') }}"
+    - name: set the hostname
+      hostname:
+        name:  "{{ hostvars[inventory_hostname]['tags.Name'] }}"
+    - name: disable updating hostname in xcloud
+      lineinfile:
+        dest: /etc/cloud/cloud.cfg
+        regexp: 'update_hostname$'
+        line: '# - update_hostname'
+        backup: yes
+      tags: xcloud
+    - name: copy kismatic-cluster.yaml template
+      template:
+        src: kismatic-cluster.yaml.j2
+        dest: /tmp/kismatic-cluster.yaml
+      delegate_to: localhost
+      run_once: true
+    - name: copy in daemon.json
+      copy:
+        src: daemon.json
+        dest: /etc/docker/daemon.json

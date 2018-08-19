@@ -1,0 +1,6 @@
+[gluster]
+name=gluster
+baseurl=http://10.200.10.20/gluster
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7

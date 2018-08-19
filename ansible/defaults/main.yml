@@ -1,0 +1,5 @@
+---
+admin_password: fun4more
+disconnected_installation: true
+kismatic_user: kismatic
+cloud_provider: aws
