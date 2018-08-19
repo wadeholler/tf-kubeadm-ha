@@ -6,6 +6,7 @@ resource "aws_instance" "kubeadm_master" {
   vpc_security_group_ids = ["${aws_security_group.kubeadm.id}"]
   key_name = "${var.key}"
   iam_instance_profile = "rancher-ec2-role"
+  associate_public_ip_address = true
 
   tags {
     Name = "${format("%s%d","kubeadm-master-",count.index)}"
@@ -24,6 +25,7 @@ resource "aws_instance" "kubeadm_etcd" {
   vpc_security_group_ids = ["${aws_security_group.kubeadm.id}"]
   key_name = "${var.key}"
   iam_instance_profile = "rancher-ec2-role"
+  associate_public_ip_address = true
 
   tags {
     Name = "${format("%s%d","kubeadm-etcd-",count.index)}"
@@ -42,6 +44,7 @@ resource "aws_instance" "kubeadm_node" {
   vpc_security_group_ids = ["${aws_security_group.kubeadm.id}"]
   key_name = "${var.key}"
   iam_instance_profile = "rancher-ec2-role"
+  associate_public_ip_address = true
 
   tags {
     Name = "${format("%s%d","kubeadm-node-",count.index)}"
@@ -60,6 +63,7 @@ resource "aws_instance" "kubeadm_ingress" {
   vpc_security_group_ids = ["${aws_security_group.kubeadm.id}"]
   key_name = "${var.key}"
   iam_instance_profile = "rancher-ec2-role"
+  associate_public_ip_address = true
 
   tags {
     Name = "${format("%s%d","kubeadm-ingress-",count.index)}"
