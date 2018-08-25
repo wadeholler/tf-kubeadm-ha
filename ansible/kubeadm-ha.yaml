@@ -1,7 +1,6 @@
-- hosts: role_etcd
+# install kubeadm, kubelet kubectl
+- hosts: all
   tasks:
-    - name: check in
-      command: uptime
     - name: Run the equivalent of "apt-get update" as a separate step
       apt:
         update_cache: yes
@@ -16,9 +15,31 @@
     - name: add docker-ce apt -key
       apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
+    - name: add repository
+      apt_repository: 
+        repo: deb https://download.docker.com/linux/ubuntu xenial stable
+        state: present
+    - name: install docker
+      package:
+        name: docker-ce=17.03.2~ce-0~ubuntu-xenial
+        state: present
+    - name: add kubernetes apt -key
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    - name: add repository
+      apt_repository:
+        repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+    - name: install kubelet kubeadm kubectl
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - kubelet
+        - kubeadm
+        - kubectl
 - hosts: all
   vars:
-    kubernetes_api_lb_name: internal-kubeadm-tf-elb-1605963861.us-east-1.elb.amazonaws.com
+    kubernetes_api_lb_name: internal-kubeadm-tf-elb-1818686531.us-east-1.elb.amazonaws.com
   tasks:
     - name: template kubeadm-config.yaml
       template:
