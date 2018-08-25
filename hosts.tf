@@ -1,3 +1,21 @@
+resource "aws_instance" "kubeadm_bastion" {
+  count = "${var.node_count_bastion}"
+  ami           = "${var.node_ami}"
+  instance_type = "t2.large"
+  subnet_id = "${lookup(var.subnets, count.index%var.num_subnets)}"
+  vpc_security_group_ids = ["${aws_security_group.kubeadm.id}"]
+  key_name = "${var.key}"
+  iam_instance_profile = "rancher-ec2-role"
+  associate_public_ip_address = true
+
+  tags {
+    Name = "${format("%s%d","kubeadm-bastion-",count.index)}"
+    Role = "bastion"
+  }
+}
+output "bastion_nodes_ips" {
+  value = "${aws_instance.kubeadm_bastion.*.private_ip}"
+}
 resource "aws_instance" "kubeadm_master" {
   count = "${var.node_count_master}"
   ami           = "${var.node_ami}"

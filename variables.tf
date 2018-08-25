@@ -12,6 +12,9 @@ variable "num_subnets" {
 variable "key" {
   default = "wadeITTLPC"
 }
+variable "node_count_bastion" {
+  default = 1
+}
 variable "node_count_master" {
   default = 2
 }
