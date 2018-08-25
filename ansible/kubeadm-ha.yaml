@@ -37,6 +37,20 @@
         - kubelet
         - kubeadm
         - kubectl
+# create etcd cluster
+- hosts: role_etcd
+  tasks:
+    - name: template new service file
+      template:
+        src: 20-etcd-service-manager.conf
+        dest: /etc/systemd/system/kubelet.service.d/20-etcd-service-manager.conf
+    - name: restart kubelet
+      systemd:
+        name: kubelet
+        state: restarted
+        daemon_reload: yes
+     
+
 - hosts: all
   vars:
     kubernetes_api_lb_name: internal-kubeadm-tf-elb-1818686531.us-east-1.elb.amazonaws.com
