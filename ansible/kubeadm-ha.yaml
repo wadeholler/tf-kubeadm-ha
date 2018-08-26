@@ -1,9 +1,9 @@
 # install kubeadm, kubelet kubectl
 - hosts: all
   tasks:
-    - name: Run the equivalent of "apt-get update" as a separate step
-      apt:
-        update_cache: yes
+#    - name: Run the equivalent of "apt-get update" as a separate step
+#      apt:
+#        update_cache: yes
     - name:
       apt:
         name: "{{ item }}"
@@ -49,6 +49,10 @@
         name: kubelet
         state: restarted
         daemon_reload: yes
+    - name: template out kubeadmcfg for etcd
+      template:
+        src: kubeadmcfg.yaml.j2
+        dest: /tmp/wade.tmp
      
 
 - hosts: all
