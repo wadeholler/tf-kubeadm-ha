@@ -106,8 +106,16 @@
         dest: "/etc/kubernetes/pki/etcd/ca.key"
       tags:
         - etcd
-
-
+    - name: run kubeadm against config
+      command: "{{ item }} --config=/tmp//kubeadmcfg.yaml"
+      with_items:
+        - kubeadm alpha phase certs etcd-server 
+        - kubeadm alpha phase certs etcd-peer
+        - kubeadm alpha phase certs etcd-healthcheck-client
+        - kubeadm alpha phase certs apiserver-etcd-client
+      tags:
+        - etcd
+      
 - hosts: all
   vars:
     kubernetes_api_lb_name: internal-kubeadm-tf-elb-1818686531.us-east-1.elb.amazonaws.com
