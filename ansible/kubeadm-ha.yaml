@@ -44,16 +44,69 @@
       template:
         src: 20-etcd-service-manager.conf
         dest: /etc/systemd/system/kubelet.service.d/20-etcd-service-manager.conf
+      register: kubeletservicefile
+      tags:
+        - etcd
     - name: restart kubelet
       systemd:
         name: kubelet
         state: restarted
         daemon_reload: yes
+      when: kubeletservicefile.changed
+      tags:
+        - etcd
     - name: template out kubeadmcfg for etcd
       template:
         src: kubeadmcfg.yaml.j2
-        dest: /tmp/wade.tmp
-     
+        dest: /tmp/kubeadmcfg.yaml
+      tags:
+        - etcd
+    - name: check for pre existing ca crt and key
+      stat:
+        path: /etc/kubernetes/pki/etcd/ca.crt
+      register: stat_result
+      run_once: true
+      tags:
+        - etcd
+    - name: create the ca.crt and key
+      command: kubeadm alpha phase certs etcd-ca
+      run_once: true
+      when:
+        - stat_result.stat.exists == False
+      tags:
+        - etcd
+    - name: fetch the ca crt and key
+      fetch:
+        src: "{{ item }}"
+        dest: /tmp/
+        flat: yes
+      run_once: true
+      with_items:
+      - /etc/kubernetes/pki/etcd/ca.crt
+      - /etc/kubernetes/pki/etcd/ca.key
+      become: yes
+      tags:
+        - etcd
+    - name: mkdir for copy ca crt and key
+      file:
+        path: /etc/kubernetes/pki/etcd
+        state: directory
+        recurse: yes
+      tags:
+        - etcd
+    - name: copy ca crt 
+      copy:
+        src: "/tmp/ca.crt"
+        dest: "/etc/kubernetes/pki/etcd/ca.crt"
+      tags:
+        - etcd
+    - name: copy ca key 
+      copy:
+        src: "/tmp/ca.key"
+        dest: "/etc/kubernetes/pki/etcd/ca.key"
+      tags:
+        - etcd
+
 
 - hosts: all
   vars:
