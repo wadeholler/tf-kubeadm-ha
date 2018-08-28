@@ -138,6 +138,13 @@
   vars:
     kubernetes_api_lb_name: internal-kubeadm-tf-elb-1818686531.us-east-1.elb.amazonaws.com
   tasks:
+    - name: mkdir for copy ca crt and key
+      file:
+        path: /etc/kubernetes/pki/etcd
+        state: directory
+        recurse: yes
+      tags:
+        - master
     - name: copy ca crt
       copy:
         src: "/tmp/ca.crt"
@@ -160,5 +167,26 @@
       template:
         src: kubeadm-config.yaml.j2
         dest: /tmp/kubeadm-config.yaml
-      delegate_to: localhost
       run_once: true
+      tags:
+        - master
+    - name: run kubeadm init on first master node
+      command: kubeadm init --config /tmp/kubeadm-config.yaml 
+      run_once: true
+    - name: copy kubeadm init files elsewhere
+      copy:
+        src: "{{ item }}"
+        dest: "{{ item }}"
+      with_items:
+        - /etc/kubernetes/pki/ca.crt
+        - /etc/kubernetes/pki/ca.key
+        - /etc/kubernetes/pki/sa.key
+        - /etc/kubernetes/pki/sa.pub
+        - /etc/kubernetes/pki/front-proxy-ca.crt
+        - /etc/kubernetes/pki/front-proxy-ca.key
+        - /tmp/kubeadm-config.yaml
+      tags:
+         - master
+    - name: run kubeadm init on other master nodes
+      command: kubeadm init --config /tmp/kubeadm-config.yaml
+      when: inventory_hostname != groups['role_master'][0]
