@@ -115,11 +115,47 @@
         - kubeadm alpha phase certs apiserver-etcd-client
       tags:
         - etcd
+    - name: run kubeadm alphas phase etcd local against config
+      command: "{{ item }} --config=/tmp//kubeadmcfg.yaml"
+      with_items:
+        - kubeadm alpha phase etcd local
+      tags:
+        - etcd
+    - name: fetch the etcd client crt and key
+      fetch:
+        src: "{{ item }}"
+        dest: /tmp/
+        flat: yes
+      run_once: true
+      with_items:
+      - /etc/kubernetes/pki/apiserver-etcd-client.crt
+      - /etc/kubernetes/pki/apiserver-etcd-client.key
+      become: yes
+      tags:
+        - etcd
       
-- hosts: all
+- hosts: role_master
   vars:
     kubernetes_api_lb_name: internal-kubeadm-tf-elb-1818686531.us-east-1.elb.amazonaws.com
   tasks:
+    - name: copy ca crt
+      copy:
+        src: "/tmp/ca.crt"
+        dest: "/etc/kubernetes/pki/etcd/ca.crt"
+      tags:
+        - master
+    - name: copy etcd client crt
+      copy:
+        src: "apiserver-etcd-client.crt"
+        dest: "/etc/kubernetes/pki/apiserver-etcd-client.crt"
+      tags:
+        - master
+    - name: copy etcd client key
+      copy:
+        src: "apiserver-etcd-client.key"
+        dest: "/etc/kubernetes/pki/apiserver-etcd-client.key"
+      tags:
+        - master
     - name: template kubeadm-config.yaml
       template:
         src: kubeadm-config.yaml.j2
