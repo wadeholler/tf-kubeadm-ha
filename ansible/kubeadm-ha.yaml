@@ -247,7 +247,7 @@
       tags:
         - master
     - name: save current joined list
-      command: kubectl --kubeconfig /etc/kubernetes/admin.conf get nodes | grep -v name
+      command: kubectl --kubeconfig /etc/kubernetes/admin.conf get nodes | grep -v NAME
       register: getnodes
       when: 
         - inventory_hostname == groups['role_master'][0]
