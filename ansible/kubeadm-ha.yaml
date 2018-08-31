@@ -153,13 +153,13 @@
         - master
     - name: copy etcd client crt
       copy:
-        src: "apiserver-etcd-client.crt"
+        src: "/tmp/apiserver-etcd-client.crt"
         dest: "/etc/kubernetes/pki/apiserver-etcd-client.crt"
       tags:
         - master
     - name: copy etcd client key
       copy:
-        src: "apiserver-etcd-client.key"
+        src: "/tmp/apiserver-etcd-client.key"
         dest: "/etc/kubernetes/pki/apiserver-etcd-client.key"
       tags:
         - master
@@ -167,16 +167,29 @@
       template:
         src: kubeadm-config.yaml.j2
         dest: /tmp/kubeadm-config.yaml
-      run_once: true
       tags:
         - master
+    - name: check if something is listening on 6443
+      shell: nc -vz localhost 6443
+      run_once: true
+      register: master0check6443
+      ignore_errors: true
+      tags:
+        - master
+      
     - name: run kubeadm init on first master node
       command: kubeadm init --config /tmp/kubeadm-config.yaml 
       run_once: true
-    - name: copy kubeadm init files elsewhere
-      copy:
+      tags:
+        - master
+      run_once: true
+      when: master0check6443.rc != 0
+
+    - name: copy kubeadm init files here
+      fetch:
         src: "{{ item }}"
-        dest: "{{ item }}"
+        dest: "/tmp/{{ item }}"
+        flat: yes
       with_items:
         - /etc/kubernetes/pki/ca.crt
         - /etc/kubernetes/pki/ca.key
@@ -185,8 +198,53 @@
         - /etc/kubernetes/pki/front-proxy-ca.crt
         - /etc/kubernetes/pki/front-proxy-ca.key
         - /tmp/kubeadm-config.yaml
+      run_once: true
       tags:
          - master
+
+    - name: copy kubeadm init files to other masters
+      copy:
+        src: "/tmp/{{ item }}"
+        dest: "{{ item }}"
+      with_items:
+        - /etc/kubernetes/pki/ca.crt
+        - /etc/kubernetes/pki/ca.key
+        - /etc/kubernetes/pki/sa.key
+        - /etc/kubernetes/pki/sa.pub
+        - /etc/kubernetes/pki/front-proxy-ca.crt
+        - /etc/kubernetes/pki/front-proxy-ca.key
+      when: inventory_hostname != groups['role_master'][0]
+      tags:
+         - master
+
+    - name: check if something is listening on 6443 on second master 
+      shell: nc -vz localhost 6443
+      register: master1check6443
+      when: inventory_hostname != groups['role_master'][0]
+      ignore_errors: true
+      tags:
+        - master
+
     - name: run kubeadm init on other master nodes
       command: kubeadm init --config /tmp/kubeadm-config.yaml
-      when: inventory_hostname != groups['role_master'][0]
+      when: 
+        - inventory_hostname != groups['role_master'][0]
+        - master1check6443.rc  != 0
+      tags:
+        - master
+
+    - name: save join command
+      command: kubeadm token create --print-join-command
+      register: joincommand
+      tags:
+        - master
+ 
+    - name: save join command locally
+      copy:
+        content: "{{ joincommand.stdout }}"
+        dest: /tmp/joincommand
+      delegate_to: localhost
+      run_once: true
+      tags:
+        - master
+   
