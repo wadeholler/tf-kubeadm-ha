@@ -271,11 +271,11 @@
       copy:
         src: /tmp/joincommand
         dest: /tmp/joincommand
-      when: getnodescontents | search("{{ inventory_hostname }}")
+      when: inventory_hostname not in getnodescontents
       tags:
         - node
     - name: run join command
       command: sh /tmp/joincommand
-      when: getnodescontents | search("{{ inventory_hostname }}")
+      when: inventory_hostname not in getnodescontents
       tags:
         - node  
