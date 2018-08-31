@@ -265,7 +265,7 @@
    
 - hosts: role_node
   vars:
-     getnodescontents: "{{ lookup('/tmp/getnodes', '/etc/foo.txt') }}"
+     getnodescontents: "{{ lookup('file', '/tmp/getnodes') }}"
   tasks:
     - name: copy command file to nodes
       copy:
