@@ -179,7 +179,6 @@
       
     - name: run kubeadm init on first master node
       command: kubeadm init --config /tmp/kubeadm-config.yaml 
-      run_once: true
       tags:
         - master
       run_once: true
@@ -247,16 +246,36 @@
       run_once: true
       tags:
         - master
+    - name: save current joined list
+      command: kubectl --kubeconfig /etc/kubernetes/admin.conf get nodes | grep -v name
+      register: getnodes
+      when: 
+        - inventory_hostname == groups['role_master'][0]
+      tags:
+        - master
+    - mame: save current joined list locally
+      copy:
+        content: "{{ getnodes.stdout }}"
+        dest: /tmp/getnodes
+      delegate_to: localhost
+      run_once: true
+      tags:
+        - master
+    
    
 - hosts: role_node
+  vars:
+     getnodescontents: "{{ lookup('/tmp/getnodes', '/etc/foo.txt') }}"
   tasks:
     - name: copy command file to nodes
       copy:
         src: /tmp/joincommand
         dest: /tmp/joincommand
+      when: getnodescontents | search("{{ inventory_hostname }}")
       tags:
         - node
     - name: run join command
       command: sh /tmp/joincommand
+      when: getnodescontents | search("{{ inventory_hostname }}")
       tags:
         - node  
