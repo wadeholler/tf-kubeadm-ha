@@ -250,4 +250,13 @@
    
 - hosts: role_node
   tasks:
-  
+    - name: copy command file to nodes
+      copy:
+        src: /tmp/joincommand
+        dest: /tmp/joincommand
+      tags:
+        - node
+    - name: run join command
+      command: sh /tmp/joincommand
+      tags:
+        - node  
