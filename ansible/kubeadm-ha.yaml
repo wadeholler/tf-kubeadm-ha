@@ -1,9 +1,6 @@
 # install kubeadm, kubelet kubectl
 - hosts: all
   tasks:
-#    - name: Run the equivalent of "apt-get update" as a separate step
-#      apt:
-#        update_cache: yes
     - name:
       apt:
         name: "{{ item }}"
@@ -37,6 +34,7 @@
         - kubelet
         - kubeadm
         - kubectl
+        
 # create etcd cluster
 - hosts: role_etcd
   tasks:
