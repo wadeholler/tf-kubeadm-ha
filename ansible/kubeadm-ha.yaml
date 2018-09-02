@@ -134,7 +134,7 @@
       
 - hosts: role_master
   vars:
-    kubernetes_api_lb_name: internal-kubeadm-tf-elb-1818686531.us-east-1.elb.amazonaws.com
+    kubernetes_api_lb_name: internal-kubeadm-tf-elb-1307989152.us-east-1.elb.amazonaws.com
   tasks:
     - name: mkdir for copy ca crt and key
       file:
