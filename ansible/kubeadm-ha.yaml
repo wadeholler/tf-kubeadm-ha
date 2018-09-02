@@ -278,4 +278,31 @@
       command: sh /tmp/joincommand
       when: hostvars[inventory_hostname]['ansible_hostname'] not in getnodescontents
       tags:
-        - node  
+        - node
+
+- hosts: all
+  tasks:
+    - name: get rbac for calico
+      get_url:
+        url: https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
+        dest: /tmp/calico_rbac.yaml
+      run_once: true
+      tags:
+        - calico
+    - name: install calico rbac
+      command: kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f /tmp/calico_rbac.yaml
+      run_once: true
+      tags:
+        - calico
+    - name: get calico install manifest
+      get_url:
+        url: https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
+        dest: /tmp/calico_manifest.yaml
+      run_once: true
+      tags:
+        - calico
+    - name: install calico
+      command: kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f /tmp/calico_manifest.yaml
+      run_once: true
+      tags:
+        - calico  
