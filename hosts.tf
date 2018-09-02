@@ -7,6 +7,7 @@ resource "aws_instance" "kubeadm_bastion" {
   key_name = "${var.key}"
   iam_instance_profile = "rancher-ec2-role"
   associate_public_ip_address = true
+  user_data = "${var.user_data}"
 
   tags {
     Name = "${format("%s%d","kubeadm-bastion-",count.index)}"
@@ -25,6 +26,7 @@ resource "aws_instance" "kubeadm_master" {
   key_name = "${var.key}"
   iam_instance_profile = "rancher-ec2-role"
   associate_public_ip_address = true
+  user_data = "${var.user_data}"
 
   tags {
     Name = "${format("%s%d","kubeadm-master-",count.index)}"
@@ -44,6 +46,7 @@ resource "aws_instance" "kubeadm_etcd" {
   key_name = "${var.key}"
   iam_instance_profile = "rancher-ec2-role"
   associate_public_ip_address = true
+  user_data = "${var.user_data}"
 
   tags {
     Name = "${format("%s%d","kubeadm-etcd-",count.index)}"
@@ -63,6 +66,7 @@ resource "aws_instance" "kubeadm_node" {
   key_name = "${var.key}"
   iam_instance_profile = "rancher-ec2-role"
   associate_public_ip_address = true
+  user_data = "${var.user_data}"
 
   tags {
     Name = "${format("%s%d","kubeadm-node-",count.index)}"
@@ -82,6 +86,7 @@ resource "aws_instance" "kubeadm_ingress" {
   key_name = "${var.key}"
   iam_instance_profile = "rancher-ec2-role"
   associate_public_ip_address = true
+  user_data = "${var.user_data}"
 
   tags {
     Name = "${format("%s%d","kubeadm-ingress-",count.index)}"

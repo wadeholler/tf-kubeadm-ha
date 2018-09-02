@@ -31,3 +31,7 @@ variable "node_ami" {
 #  default = "ami-90b034f1"
   default = "ami-04169656fea786776"
 }
+
+variable "user_data" {
+  default = "user_data.sh"
+}
