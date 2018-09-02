@@ -233,6 +233,7 @@
     - name: save join command
       command: kubeadm token create --print-join-command
       register: joincommand
+      run_once: true
       tags:
         - master
  
