@@ -280,7 +280,7 @@
       tags:
         - node
 
-- hosts: all
+- hosts: role_master
   tasks:
     - name: get rbac for calico
       get_url:
