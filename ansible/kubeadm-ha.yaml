@@ -1,5 +1,6 @@
 # install kubeadm, kubelet kubectl
-# ANSIBLE_HOST_KEY_CHECKING=False TF_KEY_NAME=private_ip ansible-playbook -i ./terraform-inventory -b --private-key  ~/wadeITTLPC6.pem ansible/kubeadm-ha.yaml
+# ANSIBLE_HOST_KEY_CHECKING=False TF_KEY_NAME=private_ip ansible-playbook -i ./terraform-inventory -b --private-key  ~/wadeITTLPC6.pem ansible/kubeadm-ha.yaml \
+# --extra-vars "kubernetes_api_lb_name=internal-kubeadm-tf-elb-1501724366.us-east-1.elb.amazonaws.com"
 - hosts: all
   tasks:
     - name:
