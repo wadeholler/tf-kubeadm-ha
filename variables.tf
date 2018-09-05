@@ -35,4 +35,7 @@ variable "node_ami" {
 variable "user_data" {
   default = "user_data.sh"
 }
+variable "user_data_bastion" {
+  default = "user_data_bastion.sh"
+}
 variable "keyfile" {}

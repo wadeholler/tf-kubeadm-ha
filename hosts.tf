@@ -7,7 +7,7 @@ resource "aws_instance" "kubeadm_bastion" {
   key_name = "${var.key}"
   iam_instance_profile = "rancher-ec2-role"
   associate_public_ip_address = true
-  user_data = "${file(var.user_data)}"
+  user_data = "${file(var.user_data_bastion)}"
 
   tags {
     Name = "${format("%s%d","kubeadm-bastion-",count.index)}"
@@ -24,9 +24,18 @@ resource "aws_instance" "kubeadm_bastion" {
   source      = "${var.keyfile}"
   destination = "/home/ubuntu/key.pem"
   }
+  provisioner "remote-exec" {
+    inline = [
+      "git clone https://github.com/wadeholler/tf-kubeadm-ha.git",
+    ]
+  }
 }
 output "bastion_nodes_ips" {
   value = "${aws_instance.kubeadm_bastion.*.private_ip}"
+}
+
+output "bastion_public_ips" {
+  value = "${aws_instance.kubeadm_bastion.*.public_ip}"
 }
 resource "aws_instance" "kubeadm_master" {
   count = "${var.node_count_master}"
