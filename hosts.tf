@@ -13,6 +13,17 @@ resource "aws_instance" "kubeadm_bastion" {
     Name = "${format("%s%d","kubeadm-bastion-",count.index)}"
     Role = "bastion"
   }
+
+  connection {
+    type     = "ssh"
+    user     = "ubuntu"
+    private_key = "${file(var.keyfile)}"
+  }
+
+  provisioner "file" {
+  source      = "${var.keyfile}"
+  destination = "/home/ubuntu/key.pem"
+  }
 }
 output "bastion_nodes_ips" {
   value = "${aws_instance.kubeadm_bastion.*.private_ip}"

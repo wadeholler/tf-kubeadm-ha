@@ -35,3 +35,4 @@ variable "node_ami" {
 variable "user_data" {
   default = "user_data.sh"
 }
+variable "keyfile" {}
