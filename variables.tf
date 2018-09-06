@@ -22,7 +22,7 @@ variable "node_count_etcd" {
   default = 3
 }
 variable "node_count_node" {
-  default = 6
+  default = 2
 }
 variable "node_count_ingress" {
   default = 2
