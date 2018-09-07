@@ -1,6 +1,7 @@
 apiVersion: kubeadm.k8s.io/v1alpha2
 kind: MasterConfiguration
 kubernetesVersion: v1.11.0
+cloudProvider: aws
 apiServerCertSANs:
 - "{{ kubernetes_api_lb_name }}"
 api:

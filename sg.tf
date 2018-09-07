@@ -24,6 +24,7 @@ resource "aws_security_group" "kubeadm" {
   }
   tags {
     Name = "kubeadm_sg"
+    KubernetesCluster = "kubernetes"
   }
 }
 resource "aws_security_group" "kubeadm-elb" {

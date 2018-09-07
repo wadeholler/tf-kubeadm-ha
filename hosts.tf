@@ -50,6 +50,7 @@ resource "aws_instance" "kubeadm_master" {
     Name = "${format("%s%d","kubeadm-master-",count.index)}"
     Role = "master"
     "kubernetes.io/cluster/kubernetes" = "kubernetes"
+    KubernetesCluster = "kubernetes"
   }
 }
 output "master_nodes_ips" {
@@ -90,6 +91,7 @@ resource "aws_instance" "kubeadm_node" {
     Name = "${format("%s%d","kubeadm-node-",count.index)}"
     Role = "node"
     "kubernetes.io/cluster/kubernetes" = "kubernetes"
+    KubernetesCluster = "kubernetes"
   }
 }
 output "node" {
@@ -110,6 +112,7 @@ resource "aws_instance" "kubeadm_ingress" {
     Name = "${format("%s%d","kubeadm-ingress-",count.index)}"
     Role = "ingress"
     "kubernetes.io/cluster/kubernetes" = "kubernetes"
+    KubernetesCluster = "kubernetes"
   }
 }
 output "ingress" {
