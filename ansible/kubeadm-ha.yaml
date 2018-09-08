@@ -163,6 +163,12 @@
         dest: "/etc/kubernetes/pki/apiserver-etcd-client.key"
       tags:
         - master
+    - name: drop in KUBELET_EXTRA_ARGS for cloud provider
+      copy:
+        src: 20-cloud-provider.conf
+        dest: /etc/systemd/system/kubelet.service.d/20-cloud-provider.conf
+      tags:
+        - master
     - name: template kubeadm-config.yaml
       template:
         src: kubeadm-config.yaml.j2
@@ -268,6 +274,12 @@
   vars:
      getnodescontents: "{{ lookup('file', '/tmp/getnodes') }}"
   tasks:
+    - name: drop in KUBELET_EXTRA_ARGS for cloud provider
+      copy:
+        src: 20-cloud-provider.conf
+        dest: /etc/systemd/system/kubelet.service.d/20-cloud-provider.conf
+      tags:
+        - node
     - name: copy command file to nodes
       copy:
         src: /tmp/joincommand
