@@ -17,7 +17,7 @@ etcd:
 networking:
     # This CIDR is a calico default. Substitute or remove for your CNI provider.
     podSubnet: "192.168.0.0/16"
- apiServerExtraArgs:
+apiServerExtraArgs:
   cloud-provider: aws
 controllerManagerExtraArgs:
   address: 0.0.0.0
@@ -27,4 +27,3 @@ schedulerExtraArgs:
 nodeRegistration:
   kubeletExtraArgs:
     cloud-provider: aws 
-
