@@ -273,6 +273,7 @@
 - hosts: role_node
   vars:
      getnodescontents: "{{ lookup('file', '/tmp/getnodes') }}"
+     basejoincommand: "{{ lookup('file', '/tmp/joincommand') }}"
   tasks:
     - name: drop in KUBELET_EXTRA_ARGS for cloud provider
       copy:
@@ -280,15 +281,22 @@
         dest: /etc/systemd/system/kubelet.service.d/20-cloud-provider.conf
       tags:
         - node
-    - name: copy command file to nodes
-      copy:
-        src: /tmp/joincommand
-        dest: /tmp/joincommand
+    - name: copy final join command to file
+      copy: 
+        content: "{{ basejoincommand }} --node-name {{ inventory_hostname }}"
+        dest: /tmp/finaljoincommand
       when: hostvars[inventory_hostname]['ansible_hostname'] not in getnodescontents
       tags:
         - node
+#    - name: copy command file to nodes
+#      copy:
+#        src: /tmp/joincommand
+#        dest: /tmp/joincommand
+#      when: hostvars[inventory_hostname]['ansible_hostname'] not in getnodescontents
+#      tags:
+#        - node
     - name: run join command
-      command: sh /tmp/joincommand --node-name {{ inventory_hostname }}
+      command: sh /tmp/finaljoincommand
       when: hostvars[inventory_hostname]['ansible_hostname'] not in getnodescontents
       tags:
         - node
