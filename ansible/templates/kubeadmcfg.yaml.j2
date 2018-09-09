@@ -7,7 +7,7 @@ etcd:
         peerCertSANs:
         - "{{ inventory_hostname }}"
         extraArgs:
-            initial-cluster: infra0=https://{{ groups['role_etcd'][0] }}:2380,infra1=https://{{ groups['role_etcd'][1] }}:2380,infra2=https://{{ groups['role_etcd'][2] }}:2380
+            initial-cluster: infra0=https://{{ hostvars[groups['role_etcd'][0]]['ansible_default_ipv4']['address'] }}:2380,infra1=https://{{ hostvars[groups['role_etcd'][1]]['ansible_default_ipv4']['address'] }}:2380,infra2=https://{{ hostvars[groups['role_etcd'][2]]['ansible_default_ipv4']['address'] }}:2380
             initial-cluster-state: new
             name: infra{{ groups['role_etcd'].index(inventory_hostname) }}
             listen-peer-urls: https://{{ inventory_hostname }}:2380
