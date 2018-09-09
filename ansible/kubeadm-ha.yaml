@@ -247,7 +247,7 @@
  
     - name: save join command locally
       copy:
-        content: "{{ joincommand.stdout }} --node-name {{ inventory_hostname }}"
+        content: "{{ joincommand.stdout }}"
         dest: /tmp/joincommand
       delegate_to: localhost
       run_once: true
@@ -288,7 +288,7 @@
       tags:
         - node
     - name: run join command
-      command: sh /tmp/joincommand
+      command: sh /tmp/joincommand --node-name {{ inventory_hostname }}
       when: hostvars[inventory_hostname]['ansible_hostname'] not in getnodescontents
       tags:
         - node
