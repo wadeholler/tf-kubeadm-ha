@@ -15,6 +15,6 @@ if [ "$(. /etc/os-release; echo $NAME)" = "Ubuntu" ]; then
   terraform init 
   terraform state pull > terraform.tfstate 
   export ANSIBLE_HOST_KEY_CHECKING=False 
-  export TF_KEY_NAME=private_ip 
+  export TF_KEY_NAME=private_dns 
   nohup ansible-playbook -i ./terraform-inventory -b --private-key  ~/key.pem ansible/kubeadm-ha.yaml  --extra-vars "kubernetes_api_lb_name=$(terraform output kubeadm-master-elb)" 2>&1 &
 fi
