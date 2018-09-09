@@ -25,5 +25,6 @@ controllerManagerExtraArgs:
 schedulerExtraArgs:
   address: 0.0.0.0
 nodeRegistration:
+  name: {{ inventory_hostname }}
   kubeletExtraArgs:
     cloud-provider: aws
