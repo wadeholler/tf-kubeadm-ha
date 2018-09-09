@@ -3,9 +3,9 @@ kind: MasterConfiguration
 etcd:
     local:
         serverCertSANs:
-        - "{{ inventory_hostname }}"
+        - "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
         peerCertSANs:
-        - "{{ inventory_hostname }}"
+        - "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
         extraArgs:
             initial-cluster: infra0=https://{{ hostvars[groups['role_etcd'][0]]['ansible_default_ipv4']['address'] }}:2380,infra1=https://{{ hostvars[groups['role_etcd'][1]]['ansible_default_ipv4']['address'] }}:2380,infra2=https://{{ hostvars[groups['role_etcd'][2]]['ansible_default_ipv4']['address'] }}:2380
             initial-cluster-state: new
