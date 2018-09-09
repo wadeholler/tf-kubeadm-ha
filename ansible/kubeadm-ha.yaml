@@ -247,7 +247,7 @@
  
     - name: save join command locally
       copy:
-        content: "{{ joincommand.stdout }}"
+        content: "{{ joincommand.stdout }} --node-name {{ invbentory_hostname }}"
         dest: /tmp/joincommand
       delegate_to: localhost
       run_once: true
