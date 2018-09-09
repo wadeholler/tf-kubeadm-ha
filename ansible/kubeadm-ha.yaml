@@ -183,139 +183,139 @@
       tags:
         - master
       
-    - name: run kubeadm init on first master node
-      command: kubeadm init --config /tmp/kubeadm-config.yaml 
-      tags:
-        - master
-      run_once: true
-      when: master0check6443.rc != 0
+#     - name: run kubeadm init on first master node
+#       command: kubeadm init --config /tmp/kubeadm-config.yaml 
+#       tags:
+#         - master
+#       run_once: true
+#       when: master0check6443.rc != 0
 
-    - name: copy kubeadm init files here
-      fetch:
-        src: "{{ item }}"
-        dest: "/tmp/{{ item }}"
-        flat: yes
-      with_items:
-        - /etc/kubernetes/pki/ca.crt
-        - /etc/kubernetes/pki/ca.key
-        - /etc/kubernetes/pki/sa.key
-        - /etc/kubernetes/pki/sa.pub
-        - /etc/kubernetes/pki/front-proxy-ca.crt
-        - /etc/kubernetes/pki/front-proxy-ca.key
-        - /tmp/kubeadm-config.yaml
-      run_once: true
-      tags:
-         - master
+#     - name: copy kubeadm init files here
+#       fetch:
+#         src: "{{ item }}"
+#         dest: "/tmp/{{ item }}"
+#         flat: yes
+#       with_items:
+#         - /etc/kubernetes/pki/ca.crt
+#         - /etc/kubernetes/pki/ca.key
+#         - /etc/kubernetes/pki/sa.key
+#         - /etc/kubernetes/pki/sa.pub
+#         - /etc/kubernetes/pki/front-proxy-ca.crt
+#         - /etc/kubernetes/pki/front-proxy-ca.key
+#         - /tmp/kubeadm-config.yaml
+#       run_once: true
+#       tags:
+#          - master
 
-    - name: copy kubeadm init files to other masters
-      copy:
-        src: "/tmp/{{ item }}"
-        dest: "{{ item }}"
-      with_items:
-        - /etc/kubernetes/pki/ca.crt
-        - /etc/kubernetes/pki/ca.key
-        - /etc/kubernetes/pki/sa.key
-        - /etc/kubernetes/pki/sa.pub
-        - /etc/kubernetes/pki/front-proxy-ca.crt
-        - /etc/kubernetes/pki/front-proxy-ca.key
-      when: inventory_hostname != groups['role_master'][0]
-      tags:
-         - master
+#     - name: copy kubeadm init files to other masters
+#       copy:
+#         src: "/tmp/{{ item }}"
+#         dest: "{{ item }}"
+#       with_items:
+#         - /etc/kubernetes/pki/ca.crt
+#         - /etc/kubernetes/pki/ca.key
+#         - /etc/kubernetes/pki/sa.key
+#         - /etc/kubernetes/pki/sa.pub
+#         - /etc/kubernetes/pki/front-proxy-ca.crt
+#         - /etc/kubernetes/pki/front-proxy-ca.key
+#       when: inventory_hostname != groups['role_master'][0]
+#       tags:
+#          - master
 
-    - name: check if something is listening on 6443 on second master 
-      shell: nc -vz localhost 6443
-      register: master1check6443
-      when: inventory_hostname != groups['role_master'][0]
-      ignore_errors: true
-      tags:
-        - master
+#     - name: check if something is listening on 6443 on second master 
+#       shell: nc -vz localhost 6443
+#       register: master1check6443
+#       when: inventory_hostname != groups['role_master'][0]
+#       ignore_errors: true
+#       tags:
+#         - master
 
-    - name: run kubeadm init on other master nodes
-      command: kubeadm init --config /tmp/kubeadm-config.yaml
-      when: 
-        - inventory_hostname != groups['role_master'][0]
-        - master1check6443.rc  != 0
-      tags:
-        - master
+#     - name: run kubeadm init on other master nodes
+#       command: kubeadm init --config /tmp/kubeadm-config.yaml
+#       when: 
+#         - inventory_hostname != groups['role_master'][0]
+#         - master1check6443.rc  != 0
+#       tags:
+#         - master
 
-    - name: save join command
-      command: kubeadm token create --print-join-command
-      register: joincommand
-      run_once: true
-      tags:
-        - master
+#     - name: save join command
+#       command: kubeadm token create --print-join-command
+#       register: joincommand
+#       run_once: true
+#       tags:
+#         - master
  
-    - name: save join command locally
-      copy:
-        content: "{{ joincommand.stdout }}"
-        dest: /tmp/joincommand
-      delegate_to: localhost
-      run_once: true
-      tags:
-        - master
-    - name: save current joined list
-      command: kubectl --kubeconfig /etc/kubernetes/admin.conf get nodes
-      register: getnodes
-      when: 
-        - inventory_hostname == groups['role_master'][0]
-      tags:
-        - master
-    - mame: save current joined list locally
-      copy:
-        content: "{{ getnodes.stdout }}"
-        dest: /tmp/getnodes
-      delegate_to: localhost
-      run_once: true
-      tags:
-        - master
+#     - name: save join command locally
+#       copy:
+#         content: "{{ joincommand.stdout }}"
+#         dest: /tmp/joincommand
+#       delegate_to: localhost
+#       run_once: true
+#       tags:
+#         - master
+#     - name: save current joined list
+#       command: kubectl --kubeconfig /etc/kubernetes/admin.conf get nodes
+#       register: getnodes
+#       when: 
+#         - inventory_hostname == groups['role_master'][0]
+#       tags:
+#         - master
+#     - mame: save current joined list locally
+#       copy:
+#         content: "{{ getnodes.stdout }}"
+#         dest: /tmp/getnodes
+#       delegate_to: localhost
+#       run_once: true
+#       tags:
+#         - master
     
    
-- hosts: role_node
-  vars:
-     getnodescontents: "{{ lookup('file', '/tmp/getnodes') }}"
-  tasks:
-    - name: drop in KUBELET_EXTRA_ARGS for cloud provider
-      copy:
-        src: 20-cloud-provider.conf
-        dest: /etc/systemd/system/kubelet.service.d/20-cloud-provider.conf
-      tags:
-        - node
-    - name: copy command file to nodes
-      copy:
-        src: /tmp/joincommand
-        dest: /tmp/joincommand
-      when: hostvars[inventory_hostname]['ansible_hostname'] not in getnodescontents
-      tags:
-        - node
-    - name: run join command
-      command: sh /tmp/joincommand
-      when: hostvars[inventory_hostname]['ansible_hostname'] not in getnodescontents
-      tags:
-        - node
+# - hosts: role_node
+#   vars:
+#      getnodescontents: "{{ lookup('file', '/tmp/getnodes') }}"
+#   tasks:
+#     - name: drop in KUBELET_EXTRA_ARGS for cloud provider
+#       copy:
+#         src: 20-cloud-provider.conf
+#         dest: /etc/systemd/system/kubelet.service.d/20-cloud-provider.conf
+#       tags:
+#         - node
+#     - name: copy command file to nodes
+#       copy:
+#         src: /tmp/joincommand
+#         dest: /tmp/joincommand
+#       when: hostvars[inventory_hostname]['ansible_hostname'] not in getnodescontents
+#       tags:
+#         - node
+#     - name: run join command
+#       command: sh /tmp/joincommand
+#       when: hostvars[inventory_hostname]['ansible_hostname'] not in getnodescontents
+#       tags:
+#         - node
 
-- hosts: role_master
-  tasks:
-    - name: get rbac for calico
-      get_url:
-        url: https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
-        dest: /tmp/calico_rbac.yaml
-      run_once: true
-      tags:
-        - calico
-    - name: install calico rbac
-      command: kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f /tmp/calico_rbac.yaml
-      run_once: true
-      tags:
-        - calico
-    - name: get calico install manifest
-      get_url:
-        url: https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
-        dest: /tmp/calico_manifest.yaml
-      run_once: true
-      tags:
-        - calico
-    - name: install calico
-      command: kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f /tmp/calico_manifest.yaml
-      run_once: true
-      tags:
-        - calico  
+# - hosts: role_master
+#   tasks:
+#     - name: get rbac for calico
+#       get_url:
+#         url: https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
+#         dest: /tmp/calico_rbac.yaml
+#       run_once: true
+#       tags:
+#         - calico
+#     - name: install calico rbac
+#       command: kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f /tmp/calico_rbac.yaml
+#       run_once: true
+#       tags:
+#         - calico
+#     - name: get calico install manifest
+#       get_url:
+#         url: https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
+#         dest: /tmp/calico_manifest.yaml
+#       run_once: true
+#       tags:
+#         - calico
+#     - name: install calico
+#       command: kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f /tmp/calico_manifest.yaml
+#       run_once: true
+#       tags:
+#         - calico  
