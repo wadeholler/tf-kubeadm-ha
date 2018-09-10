@@ -6,4 +6,5 @@
 
 * run the terraform
 
-    terraform apply -var "keyfile=../key.pem"
+    sh run.sh ../key.pem
+    ssh -i ../key.pem ubuntu@$(terraform output bastion_public_ips)
