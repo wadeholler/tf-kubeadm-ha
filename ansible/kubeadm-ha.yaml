@@ -1,5 +1,5 @@
 # install kubeadm, kubelet kubectl
-# ANSIBLE_HOST_KEY_CHECKING=False TF_KEY_NAME=private_ip ansible-playbook -i ./terraform-inventory -b --private-key  ~/wadeITTLPC6.pem ansible/kubeadm-ha.yaml \
+# ANSIBLE_HOST_KEY_CHECKING=False TF_KEY_NAME=private_dns ansible-playbook -i ./terraform-inventory -b --private-key  ~/wadeITTLPC6.pem ansible/kubeadm-ha.yaml \
 # --extra-vars "kubernetes_api_lb_name=internal-kubeadm-tf-elb-1501724366.us-east-1.elb.amazonaws.com"
 - hosts: all
   tasks:
@@ -269,7 +269,7 @@
       tags:
         - master
     
-   
+#Run Nodes  
 - hosts: role_node
   vars:
      getnodescontents: "{{ lookup('file', '/tmp/getnodes') }}"
@@ -288,19 +288,13 @@
       when: hostvars[inventory_hostname]['ansible_hostname'] not in getnodescontents
       tags:
         - node
-#    - name: copy command file to nodes
-#      copy:
-#        src: /tmp/joincommand
-#        dest: /tmp/joincommand
-#      when: hostvars[inventory_hostname]['ansible_hostname'] not in getnodescontents
-#      tags:
-#        - node
     - name: run join command
       command: sh /tmp/finaljoincommand
       when: hostvars[inventory_hostname]['ansible_hostname'] not in getnodescontents
       tags:
         - node
 
+#CNI
 - hosts: role_master
   tasks:
     - name: get rbac for calico
@@ -328,6 +322,7 @@
       tags:
         - calico  
 
+# Addons
 - hosts: role_master
   tasks:
     - name: copy default aws storage class manifest
