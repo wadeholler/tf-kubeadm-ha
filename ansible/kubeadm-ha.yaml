@@ -337,3 +337,20 @@
       run_once: true
       tags:
         - addons
+    - name: makedir .kube on bastion
+      file:
+        path: /home/ubuntu/.kube
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+      delegate_to: localhost
+      tags:
+        - addons
+    - name: get kubeconfig for admin to bastion
+      fetch:
+        src: /etc/kubernetes/admin.conf
+        dest: /root/.kube/config
+        flat: yes
+      run_once: true
+      tags:
+        - addons
