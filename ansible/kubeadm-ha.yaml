@@ -349,7 +349,7 @@
     - name: get kubeconfig for admin to bastion
       fetch:
         src: /etc/kubernetes/admin.conf
-        dest: /root/.kube/config
+        dest: /home/ubuntu/.kube/config
         flat: yes
       run_once: true
       tags:
