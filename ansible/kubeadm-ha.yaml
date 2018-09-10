@@ -165,8 +165,8 @@
         - master
     - name: drop in KUBELET_EXTRA_ARGS for cloud provider
       copy:
-        src: 20-cloud-provider.conf
-        dest: /etc/systemd/system/kubelet.service.d/20-cloud-provider.conf
+        src: kubelet
+        dest: /etc/default/kubelet
       tags:
         - master
     - name: template kubeadm-config.yaml
@@ -277,8 +277,8 @@
   tasks:
     - name: drop in KUBELET_EXTRA_ARGS for cloud provider
       copy:
-        src: 20-cloud-provider.conf
-        dest: /etc/systemd/system/kubelet.service.d/20-cloud-provider.conf
+        src: kubelet
+        dest: /etc/default/kubelet
       tags:
         - node
     - name: copy final join command to file
