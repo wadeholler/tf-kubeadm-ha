@@ -326,7 +326,7 @@
 - hosts: role_master
   tasks:
     - name: copy default aws storage class manifest
-      copy:
+      template:
         src: StorageClassGP2.yaml
         dest: /tmp/StorageClassGP2.yaml
       run_once: true
