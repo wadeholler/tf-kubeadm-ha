@@ -28,6 +28,8 @@
     - name: add repository
       apt_repository:
         repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+#order matters here - if kubectl is last then it will have alreasdy
+#been installed at a higher version
     - name: install kubelet kubeadm kubectl
       package:
         name: "{{ item }}"
