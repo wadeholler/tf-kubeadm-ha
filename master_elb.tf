@@ -4,7 +4,7 @@ resource "aws_elb" "kubeadm-elb" {
 #  availability_zones = ["us-gov-west-1a", "us-gov-west-1b"]
   security_groups = ["${aws_security_group.kubeadm.id}","${aws_security_group.kubeadm-elb.id}"]
   subnets = "${values(var.subnets)}"
-  internal = true
+#  internal = true
 
   listener {
     instance_port     = 6443
