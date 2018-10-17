@@ -262,7 +262,7 @@
         - inventory_hostname == groups['role_master'][0]
       tags:
         - master
-    - mame: save current joined list locally
+    - name: save current joined list locally
       copy:
         content: "{{ getnodes.stdout }}"
         dest: /tmp/getnodes
