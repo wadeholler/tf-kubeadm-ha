@@ -1,0 +1,357 @@
+# install kubeadm, kubelet kubectl
+# ANSIBLE_HOST_KEY_CHECKING=False TF_KEY_NAME=private_dns ansible-playbook -i ./terraform-inventory -b --private-key  ~/wadeITTLPC6.pem ansible/kubeadm-ha.yaml \
+# --extra-vars "kubernetes_api_lb_name=internal-kubeadm-tf-elb-1501724366.us-east-1.elb.amazonaws.com"
+- hosts: all
+  tasks:
+    - name: disable selinux as kubelet support is not ready
+      selinux:
+        policy: targeted
+        state: permissive
+
+    - name: install docker
+      package:
+        name: docker-ce-18.06.1.ce-3.el7
+        state: present
+    - name: start docker
+      service:
+        name: docker
+        state: started
+        enabled: yes
+    - name: install nc
+      yum:
+        name: nc
+        state: installed
+
+
+#order matters here - if kubectl is last then it will have alreasdy
+#been installed at a higher version
+    - name: create repo file for kubernetes
+      copy:
+        src: kubernetes.repo
+        dest: /etc/yum.repos.d/kubernetes.repo
+    - name: install kubelet kubeadm kubectl
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - kubectl=1.13.0
+        - kubelet=1.13.0
+        - kubeadm=1.13.0
+        
+# create etcd cluster
+- hosts: role_etcd
+  tasks:
+    - name: template new service file
+      template:
+        src: 20-etcd-service-manager.conf
+        dest: /etc/systemd/system/kubelet.service.d/20-etcd-service-manager.conf
+      register: kubeletservicefile
+      tags:
+        - etcd
+    - name: restart kubelet
+      systemd:
+        name: kubelet
+        state: restarted
+        daemon_reload: yes
+      when: kubeletservicefile.changed
+      tags:
+        - etcd
+    - name: template out kubeadmcfg for etcd
+      template:
+        src: kubeadmcfg.yaml.j2
+        dest: /tmp/kubeadmcfg.yaml
+      tags:
+        - etcd
+    - name: check for pre existing ca crt and key
+      stat:
+        path: /etc/kubernetes/pki/etcd/ca.crt
+      register: stat_result
+      run_once: true
+      tags:
+        - etcd
+    - name: create the ca.crt and key
+      command: kubeadm alpha phase certs etcd-ca
+      run_once: true
+      when:
+        - stat_result.stat.exists == False
+      tags:
+        - etcd
+    - name: fetch the ca crt and key
+      fetch:
+        src: "{{ item }}"
+        dest: /tmp/
+        flat: yes
+      run_once: true
+      with_items:
+      - /etc/kubernetes/pki/etcd/ca.crt
+      - /etc/kubernetes/pki/etcd/ca.key
+      become: yes
+      tags:
+        - etcd
+    - name: mkdir for copy ca crt and key
+      file:
+        path: /etc/kubernetes/pki/etcd
+        state: directory
+        recurse: yes
+      tags:
+        - etcd
+    - name: copy ca crt 
+      copy:
+        src: "/tmp/ca.crt"
+        dest: "/etc/kubernetes/pki/etcd/ca.crt"
+      tags:
+        - etcd
+    - name: copy ca key 
+      copy:
+        src: "/tmp/ca.key"
+        dest: "/etc/kubernetes/pki/etcd/ca.key"
+      tags:
+        - etcd
+    - name: run kubeadm against config
+      command: "{{ item }} --config=/tmp//kubeadmcfg.yaml"
+      with_items:
+        - kubeadm init phase certs etcd-server 
+        - kubeadm init phase certs etcd-peer
+        - kubeadm init phase certs etcd-healthcheck-client
+        - kubeadm init phase certs apiserver-etcd-client
+      tags:
+        - etcd
+    - name: run kubeadm alphas phase etcd local against config
+      command: "{{ item }} --config=/tmp//kubeadmcfg.yaml"
+      with_items:
+        - kubeadm init phase etcd local
+      tags:
+        - etcd
+    - name: fetch the etcd client crt and key
+      fetch:
+        src: "{{ item }}"
+        dest: /tmp/
+        flat: yes
+      run_once: true
+      with_items:
+      - /etc/kubernetes/pki/apiserver-etcd-client.crt
+      - /etc/kubernetes/pki/apiserver-etcd-client.key
+      become: yes
+      tags:
+        - etcd
+      
+- hosts: role_master
+  vars:
+    #kubernetes_api_lb_name: internal-kubeadm-tf-elb-1307989152.us-east-1.elb.amazonaws.com
+  tasks:
+    - name: mkdir for copy ca crt and key
+      file:
+        path: /etc/kubernetes/pki/etcd
+        state: directory
+        recurse: yes
+      tags:
+        - master
+    - name: copy ca crt
+      copy:
+        src: "/tmp/ca.crt"
+        dest: "/etc/kubernetes/pki/etcd/ca.crt"
+      tags:
+        - master
+    - name: copy etcd client crt
+      copy:
+        src: "/tmp/apiserver-etcd-client.crt"
+        dest: "/etc/kubernetes/pki/apiserver-etcd-client.crt"
+      tags:
+        - master
+    - name: copy etcd client key
+      copy:
+        src: "/tmp/apiserver-etcd-client.key"
+        dest: "/etc/kubernetes/pki/apiserver-etcd-client.key"
+      tags:
+        - master
+    - name: drop in KUBELET_EXTRA_ARGS for cloud provider
+      copy:
+        src: kubelet
+        dest: /etc/default/kubelet
+      tags:
+        - master
+    - name: template kubeadm-config.yaml
+      template:
+        src: kubeadm-config.yaml.j2
+        dest: /tmp/kubeadm-config.yaml
+      tags:
+        - master
+    - name: check if something is listening on 6443
+      shell: nc -vz localhost 6443
+      run_once: true
+      register: master0check6443
+      ignore_errors: true
+      tags:
+        - master
+      
+    - name: run kubeadm init on first master node
+      command: kubeadm init --config /tmp/kubeadm-config.yaml 
+      tags:
+        - master
+      run_once: true
+      when: master0check6443.rc != 0
+
+    - name: copy kubeadm init files here
+      fetch:
+        src: "{{ item }}"
+        dest: "/tmp/{{ item }}"
+        flat: yes
+      with_items:
+        - /etc/kubernetes/pki/ca.crt
+        - /etc/kubernetes/pki/ca.key
+        - /etc/kubernetes/pki/sa.key
+        - /etc/kubernetes/pki/sa.pub
+        - /etc/kubernetes/pki/front-proxy-ca.crt
+        - /etc/kubernetes/pki/front-proxy-ca.key
+        - /tmp/kubeadm-config.yaml
+      run_once: true
+      tags:
+         - master
+
+    - name: copy kubeadm init files to other masters
+      copy:
+        src: "/tmp/{{ item }}"
+        dest: "{{ item }}"
+      with_items:
+        - /etc/kubernetes/pki/ca.crt
+        - /etc/kubernetes/pki/ca.key
+        - /etc/kubernetes/pki/sa.key
+        - /etc/kubernetes/pki/sa.pub
+        - /etc/kubernetes/pki/front-proxy-ca.crt
+        - /etc/kubernetes/pki/front-proxy-ca.key
+      when: inventory_hostname != groups['role_master'][0]
+      tags:
+         - master
+
+    - name: check if something is listening on 6443 on second master 
+      shell: nc -vz localhost 6443
+      register: master1check6443
+      when: inventory_hostname != groups['role_master'][0]
+      ignore_errors: true
+      tags:
+        - master
+
+    - name: run kubeadm init on other master nodes
+      command: kubeadm init --config /tmp/kubeadm-config.yaml
+      when: 
+        - inventory_hostname != groups['role_master'][0]
+        - master1check6443.rc  != 0
+      tags:
+        - master
+
+    - name: save join command
+      command: kubeadm token create --print-join-command
+      register: joincommand
+      run_once: true
+      tags:
+        - master
+ 
+    - name: save join command locally
+      copy:
+        content: "{{ joincommand.stdout }}"
+        dest: /tmp/joincommand
+      delegate_to: localhost
+      run_once: true
+      tags:
+        - master
+    - name: save current joined list
+      command: kubectl --kubeconfig /etc/kubernetes/admin.conf get nodes
+      register: getnodes
+      when: 
+        - inventory_hostname == groups['role_master'][0]
+      tags:
+        - master
+    - name: save current joined list locally
+      copy:
+        content: "{{ getnodes.stdout }}"
+        dest: /tmp/getnodes
+      delegate_to: localhost
+      run_once: true
+      tags:
+        - master
+    
+#Run Nodes  
+- hosts: role_node
+  vars:
+     getnodescontents: "{{ lookup('file', '/tmp/getnodes') }}"
+     basejoincommand: "{{ lookup('file', '/tmp/joincommand') }}"
+  tasks:
+    - name: drop in KUBELET_EXTRA_ARGS for cloud provider
+      copy:
+        src: kubelet
+        dest: /etc/default/kubelet
+      tags:
+        - node
+    - name: copy final join command to file
+      copy: 
+        content: "{{ basejoincommand }} --node-name {{ inventory_hostname }}"
+        dest: /tmp/finaljoincommand
+      when: hostvars[inventory_hostname]['ansible_hostname'] not in getnodescontents
+      tags:
+        - node
+    - name: run join command
+      command: sh /tmp/finaljoincommand
+      when: hostvars[inventory_hostname]['ansible_hostname'] not in getnodescontents
+      tags:
+        - node
+
+#CNI
+- hosts: role_master
+  tasks:
+    - name: get rbac for calico
+      get_url:
+        url: https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
+        dest: /tmp/calico_rbac.yaml
+      run_once: true
+      tags:
+        - calico
+    - name: install calico rbac
+      command: kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f /tmp/calico_rbac.yaml
+      run_once: true
+      tags:
+        - calico
+    - name: get calico install manifest
+      get_url:
+        url: https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
+        dest: /tmp/calico_manifest.yaml
+      run_once: true
+      tags:
+        - calico
+    - name: install calico
+      command: kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f /tmp/calico_manifest.yaml
+      run_once: true
+      tags:
+        - calico  
+
+# Addons
+- hosts: role_master
+  tasks:
+    - name: copy default aws storage class manifest
+      template:
+        src: StorageClassGP2.yaml
+        dest: /tmp/StorageClassGP2.yaml
+      run_once: true
+      tags:
+        - addons
+    - name: install default aws storage class
+      command: kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f /tmp/StorageClassGP2.yaml
+      run_once: true
+      tags:
+        - addons
+    - name: makedir .kube on bastion
+      file:
+        path: /home/ubuntu/.kube
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+      delegate_to: localhost
+      tags:
+        - addons
+    - name: get kubeconfig for admin to bastion
+      fetch:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/ubuntu/.kube/config
+        flat: yes
+      run_once: true
+      tags:
+        - addons

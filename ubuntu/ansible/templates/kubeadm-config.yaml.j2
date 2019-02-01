@@ -1,0 +1,30 @@
+apiVersion: kubeadm.k8s.io/v1alpha2
+kind: MasterConfiguration
+kubernetesVersion: v1.12.0
+apiServerCertSANs:
+- "{{ kubernetes_api_lb_name }}"
+api:
+    controlPlaneEndpoint: "{{ kubernetes_api_lb_name }}:6443"
+etcd:
+    external:
+        endpoints:
+        - https://{{ hostvars[groups['role_etcd'][0]]['ansible_default_ipv4']['address'] }}:2379
+        - https://{{ hostvars[groups['role_etcd'][1]]['ansible_default_ipv4']['address'] }}:2379
+        - https://{{ hostvars[groups['role_etcd'][2]]['ansible_default_ipv4']['address'] }}:2379
+        caFile: /etc/kubernetes/pki/etcd/ca.crt
+        certFile: /etc/kubernetes/pki/apiserver-etcd-client.crt
+        keyFile: /etc/kubernetes/pki/apiserver-etcd-client.key
+networking:
+    # This CIDR is a calico default. Substitute or remove for your CNI provider.
+    podSubnet: "192.168.0.0/16"
+apiServerExtraArgs:
+  cloud-provider: aws
+controllerManagerExtraArgs:
+  address: 0.0.0.0
+  cloud-provider: aws
+schedulerExtraArgs:
+  address: 0.0.0.0
+nodeRegistration:
+  name: {{ inventory_hostname }}
+  kubeletExtraArgs:
+    cloud-provider: aws

@@ -1,0 +1,16 @@
+apiVersion: "kubeadm.k8s.io/v1alpha2"
+kind: MasterConfiguration
+etcd:
+    local:
+        serverCertSANs:
+        - "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+        peerCertSANs:
+        - "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+        extraArgs:
+            initial-cluster: infra0=https://{{ hostvars[groups['role_etcd'][0]]['ansible_default_ipv4']['address'] }}:2380,infra1=https://{{ hostvars[groups['role_etcd'][1]]['ansible_default_ipv4']['address'] }}:2380,infra2=https://{{ hostvars[groups['role_etcd'][2]]['ansible_default_ipv4']['address'] }}:2380
+            initial-cluster-state: new
+            name: infra{{ groups['role_etcd'].index(inventory_hostname) }}
+            listen-peer-urls: https://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:2380
+            listen-client-urls: https://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:2379
+            advertise-client-urls: https://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:2379
+            initial-advertise-peer-urls: https://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:2380
